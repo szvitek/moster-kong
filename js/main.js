@@ -31,15 +31,36 @@ gameScene.preload = function() {
 
 // executed once, after assets were loaded
 gameScene.create = function() {
+  this.platforms = this.add.group();
   // 1) adding existing sprites to the physics system
   // sprite creation
-  const ground = this.add.sprite(180, 400, "ground");
+  const ground = this.add.sprite(180, 604, "ground");
+  // add sprite to the physics system, true flag makes it static
+  this.physics.add.existing(ground, true);
+  this.platforms.add(ground);
 
-  // add sprite to the physics system
-  this.physics.add.existing(ground);
+  //platform
+  // tileSprite: repeate same sprite multiple times
+  const platform = this.add.tileSprite(180, 500, 3 * 36, 1 * 30, "block");
+  this.physics.add.existing(platform, true);
+  this.platforms.add(platform);
+
+  // player
+  this.player = this.add.sprite(180, 400, "player", 3);
+  this.physics.add.existing(this.player);
+
+  // disable gravity
+  // ground.body.allowGravity = false;
+
+  // make immovable
+  // ground.body.immovable = true;
 
   // 2) creating and adding sprites to the physics system
-  const ground2 = this.physics.add.sprite(180, 200, "ground");
+  // const ground2 = this.physics.add.sprite(180, 200, "ground");
+
+  // collision detection
+  // this.physics.add.collider(ground, ground2);
+  this.physics.add.collider(this.player, this.platforms);
 };
 
 // our game's configuration

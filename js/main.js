@@ -2,7 +2,11 @@
 const gameScene = new Phaser.Scene("Game");
 
 // some parameters for our scene
-gameScene.init = function() {};
+gameScene.init = function() {
+  // player params
+  this.playerSpeed = 150;
+  this.jumpSpeed = -600;
+};
 
 // load asset files for our game
 gameScene.preload = function() {
@@ -49,18 +53,49 @@ gameScene.create = function() {
   this.player = this.add.sprite(180, 400, "player", 3);
   this.physics.add.existing(this.player);
 
-  // disable gravity
-  // ground.body.allowGravity = false;
-
-  // make immovable
-  // ground.body.immovable = true;
-
-  // 2) creating and adding sprites to the physics system
-  // const ground2 = this.physics.add.sprite(180, 200, "ground");
+  // walking animation
+  this.anims.create({
+    key: "walking",
+    frames: this.anims.generateFrameNames("player", {
+      frames: [0, 1, 2]
+    }),
+    frameRate: 12,
+    yoyo: true,
+    repeat: -1
+  });
 
   // collision detection
-  // this.physics.add.collider(ground, ground2);
   this.physics.add.collider(this.player, this.platforms);
+
+  // enable cursor keys
+  this.cursors = this.input.keyboard.createCursorKeys();
+};
+
+gameScene.update = function() {
+  if (this.cursors.left.isDown) {
+    this.player.body.setVelocityX(-this.playerSpeed);
+    this.player.flipX = false;
+
+    if (!this.player.anims.isPlaying) {
+      this.player.anims.play("walking");
+    }
+  } else if (this.cursors.right.isDown) {
+    this.player.body.setVelocityX(this.playerSpeed);
+    this.player.flipX = true;
+
+    if (!this.player.anims.isPlaying) {
+      this.player.anims.play("walking");
+    }
+  } else {
+    // make the player stop
+    this.player.body.setVelocityX(0);
+
+    // stop waling animation
+    this.player.anims.stop("walking");
+
+    // set default frame
+    this.player.setFrame(3);
+  }
 };
 
 // our game's configuration

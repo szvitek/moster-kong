@@ -31,6 +31,8 @@ gameScene.preload = function() {
     margin: 1,
     spacing: 1
   });
+
+  this.load.json("levelData", "assets/json/levelData.json");
 };
 
 // executed once, after assets were loaded
@@ -39,19 +41,8 @@ gameScene.create = function() {
   this.physics.world.bounds.width = 360;
   this.physics.world.bounds.height = 700;
 
-  this.platforms = this.add.group();
-  // 1) adding existing sprites to the physics system
-  // sprite creation
-  const ground = this.add.sprite(180, 604, "ground");
-  // add sprite to the physics system, true flag makes it static
-  this.physics.add.existing(ground, true);
-  this.platforms.add(ground);
-
-  //platform
-  // tileSprite: repeate same sprite multiple times
-  const platform = this.add.tileSprite(180, 500, 3 * 36, 1 * 30, "block");
-  this.physics.add.existing(platform, true);
-  this.platforms.add(platform);
+  // setup all level elements
+  this.setupLevel();
 
   // player
   this.player = this.add.sprite(180, 400, "player", 3);
@@ -123,6 +114,39 @@ gameScene.update = function() {
 
     // change frame
     this.player.setFrame(2);
+  }
+};
+
+gameScene.setupLevel = function() {
+  this.levelData = this.cache.json.get("levelData");
+  this.platforms = this.add.group();
+
+  // create all the platforms
+  for (const platform of this.levelData.platforms) {
+    let newObj;
+
+    if (platform.numTiles === 1) {
+      // create sprite
+      newObj = this.add.sprite(platform.x, platform.y, platform.key);
+    } else {
+      // create tilesprite
+      const width = this.textures.get(platform.key).get(0).width;
+      const height = this.textures.get(platform.key).get(0).height;
+      newObj = this.add.tileSprite(
+        platform.x,
+        platform.y,
+        platform.numTiles * width,
+        height,
+        platform.key
+      );
+    }
+    newObj.setOrigin(0, 0);
+
+    // enable physics
+    this.physics.add.existing(newObj, true);
+
+    // add to the group
+    this.platforms.add(newObj);
   }
 };
 

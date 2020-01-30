@@ -35,6 +35,10 @@ gameScene.preload = function() {
 
 // executed once, after assets were loaded
 gameScene.create = function() {
+  // world bounds
+  this.physics.world.bounds.width = 360;
+  this.physics.world.bounds.height = 700;
+
   this.platforms = this.add.group();
   // 1) adding existing sprites to the physics system
   // sprite creation
@@ -52,6 +56,9 @@ gameScene.create = function() {
   // player
   this.player = this.add.sprite(180, 400, "player", 3);
   this.physics.add.existing(this.player);
+
+  // constraint player to the game bounds
+  this.player.body.setCollideWorldBounds(true);
 
   // walking animation
   this.anims.create({
@@ -72,18 +79,22 @@ gameScene.create = function() {
 };
 
 gameScene.update = function() {
+  // are we on the ground?
+  const onGround =
+    this.player.body.blocked.down || this.player.body.touching.down;
+
   if (this.cursors.left.isDown) {
     this.player.body.setVelocityX(-this.playerSpeed);
     this.player.flipX = false;
 
-    if (!this.player.anims.isPlaying) {
+    if (onGround && !this.player.anims.isPlaying) {
       this.player.anims.play("walking");
     }
   } else if (this.cursors.right.isDown) {
     this.player.body.setVelocityX(this.playerSpeed);
     this.player.flipX = true;
 
-    if (!this.player.anims.isPlaying) {
+    if (onGround && !this.player.anims.isPlaying) {
       this.player.anims.play("walking");
     }
   } else {
@@ -94,7 +105,24 @@ gameScene.update = function() {
     this.player.anims.stop("walking");
 
     // set default frame
-    this.player.setFrame(3);
+    if (onGround) {
+      this.player.setFrame(3);
+    }
+  }
+
+  // handle jumping
+  if (
+    this.player.body.blocked.down &&
+    (this.cursors.space.isDown || this.cursors.up.isDown)
+  ) {
+    // give the player a velocity in Y
+    this.player.body.setVelocityY(this.jumpSpeed);
+
+    // stop the walking animation
+    this.player.anims.stop("walking");
+
+    // change frame
+    this.player.setFrame(2);
   }
 };
 

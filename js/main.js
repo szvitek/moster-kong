@@ -41,15 +41,18 @@ gameScene.create = function() {
   this.physics.world.bounds.width = 360;
   this.physics.world.bounds.height = 700;
 
+  // fire animation
+  this.anims.create({
+    key: "burning",
+    frames: this.anims.generateFrameNames("fire", {
+      frames: [0, 1]
+    }),
+    frameRate: 8,
+    repeat: -1
+  });
+
   // setup all level elements
   this.setupLevel();
-
-  // player
-  this.player = this.add.sprite(180, 400, "player", 3);
-  this.physics.add.existing(this.player);
-
-  // constraint player to the game bounds
-  this.player.body.setCollideWorldBounds(true);
 
   // walking animation
   this.anims.create({
@@ -61,9 +64,6 @@ gameScene.create = function() {
     yoyo: true,
     repeat: -1
   });
-
-  // collision detection
-  this.physics.add.collider(this.player, this.platforms);
 
   // enable cursor keys
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -119,9 +119,9 @@ gameScene.update = function() {
 
 gameScene.setupLevel = function() {
   this.levelData = this.cache.json.get("levelData");
-  this.platforms = this.add.group();
 
   // create all the platforms
+  this.platforms = this.add.group();
   for (const platform of this.levelData.platforms) {
     let newObj;
 
@@ -148,6 +148,42 @@ gameScene.setupLevel = function() {
     // add to the group
     this.platforms.add(newObj);
   }
+
+  // fire
+  this.fires = this.add.group();
+  for (const platform of this.levelData.fires) {
+    let newObj = this.add
+      .sprite(platform.x, platform.y, "fire")
+      .setOrigin(0, 0);
+
+    // enable physics
+    this.physics.add.existing(newObj);
+    newObj.body.allowGravity = false;
+    newObj.body.immovable = true;
+
+    // play burning animation
+    newObj.anims.play("burning");
+
+    // add to the group
+    this.fires.add(newObj);
+  }
+
+  // player
+  const { player } = this.levelData;
+  this.player = this.add.sprite(player.x, player.y, "player", 3);
+  this.physics.add.existing(this.player);
+
+  // constraint player to the game bounds
+  this.player.body.setCollideWorldBounds(true);
+
+  // goal
+  const { goal } = this.levelData;
+  this.goal = this.add.sprite(goal.x, goal.y, "goal");
+  this.physics.add.existing(this.goal);
+
+  // collision detection
+  this.physics.add.collider(this.player, this.platforms);
+  this.physics.add.collider(this.goal, this.platforms);
 };
 
 // our game's configuration

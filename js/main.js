@@ -79,7 +79,7 @@ gameScene.create = function() {
   // only can do overlap checks with physic groups
   this.physics.add.overlap(
     this.player,
-    [this.fires, this.goal],
+    [this.fires, this.goal, this.barrels],
     () => this.restartGame(),
     null,
     null
@@ -235,7 +235,11 @@ gameScene.setupSpawner = function() {
     loop: true,
     callback: () => {
       // create barrel
-      const barrel = this.barrels.create(this.goal.x, this.goal.y, "barrel");
+      const barrel = this.barrels.get(this.goal.x, this.goal.y, "barrel");
+
+      barrel.setActive(true);
+      barrel.setVisible(true);
+      barrel.body.enable = true;
 
       // set
       barrel.setVelocityX(spawner.speed);
@@ -245,7 +249,8 @@ gameScene.setupSpawner = function() {
         delay: spawner.lifespan,
         repeat: 0,
         callback: () => {
-          barrel.destroy();
+          this.barrels.killAndHide(barrel);
+          barrel.body.enable = false;
         }
       });
     }

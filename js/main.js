@@ -94,14 +94,14 @@ gameScene.update = function() {
   const onGround =
     this.player.body.blocked.down || this.player.body.touching.down;
 
-  if (this.cursors.left.isDown) {
+  if (this.cursors.left.isDown && !this.cursors.right.isDown) {
     this.player.body.setVelocityX(-this.playerSpeed);
     this.player.flipX = false;
 
     if (onGround && !this.player.anims.isPlaying) {
       this.player.anims.play("walking");
     }
-  } else if (this.cursors.right.isDown) {
+  } else if (this.cursors.right.isDown && !this.cursors.left.isDown) {
     this.player.body.setVelocityX(this.playerSpeed);
     this.player.flipX = true;
 
@@ -122,10 +122,7 @@ gameScene.update = function() {
   }
 
   // handle jumping
-  if (
-    this.player.body.blocked.down &&
-    (this.cursors.space.isDown || this.cursors.up.isDown)
-  ) {
+  if (onGround && (this.cursors.space.isDown || this.cursors.up.isDown)) {
     // give the player a velocity in Y
     this.player.body.setVelocityY(this.jumpSpeed);
 
@@ -230,7 +227,7 @@ gameScene.setupSpawner = function() {
   });
 
   // spawn barrels
-  let spawningEvent = this.time.addEvent({
+  this.time.addEvent({
     delay: spawner.interval,
     loop: true,
     callback: () => {
@@ -269,7 +266,7 @@ const config = {
     default: "arcade",
     arcade: {
       gravity: { y: 1000 },
-      debug: true
+      debug: false
     }
   }
 };

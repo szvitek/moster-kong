@@ -37,10 +37,6 @@ gameScene.preload = function() {
 
 // executed once, after assets were loaded
 gameScene.create = function() {
-  // world bounds
-  this.physics.world.bounds.width = 360;
-  this.physics.world.bounds.height = 700;
-
   // fire animation
   // this check is not really needed anymrore but I leave it here anyway
   if (!this.anims.get("burning")) {
@@ -70,9 +66,14 @@ gameScene.create = function() {
   // setup all level elements
   this.setupLevel();
 
-  // camera bounds
-  this.cameras.main.setBounds(0, 0, 360, 700);
-  this.cameras.main.startFollow(this.player);
+  // init barrel spawner
+  this.setupSpawner();
+
+  // collision detection
+  this.physics.add.collider(
+    [this.player, this.goal, this.barrels],
+    this.platforms
+  );
 
   // overlap checks
   // only can do overlap checks with physic groups
@@ -139,6 +140,12 @@ gameScene.update = function() {
 gameScene.setupLevel = function() {
   this.levelData = this.cache.json.get("levelData");
 
+  const { world } = this.levelData;
+
+  // world bounds
+  this.physics.world.bounds.width = world.width;
+  this.physics.world.bounds.height = world.height;
+
   // create all the platforms
   // physics groups have better performance than regular groups
   this.platforms = this.physics.add.staticGroup();
@@ -191,13 +198,14 @@ gameScene.setupLevel = function() {
   // constraint player to the game bounds
   this.player.body.setCollideWorldBounds(true);
 
+  // camera bounds
+  this.cameras.main.setBounds(0, 0, world.width, world.height);
+  this.cameras.main.startFollow(this.player);
+
   // goal
   const { goal } = this.levelData;
   this.goal = this.add.sprite(goal.x, goal.y, "goal");
   this.physics.add.existing(this.goal);
-
-  // collision detection
-  this.physics.add.collider([this.player, this.goal], this.platforms);
 };
 
 // restart game (game over / won)
@@ -209,6 +217,38 @@ gameScene.restartGame = function(sourceSprite, targetSprite) {
   this.cameras.main.on("camerafadeoutcomplete", (camera, effect) => {
     // restart the scene
     this.scene.restart();
+  });
+};
+
+gameScene.setupSpawner = function() {
+  const { spawner } = this.levelData;
+
+  this.barrels = this.physics.add.group({
+    bounceX: 1,
+    bounceY: 0.3,
+    collideWorldBounds: true
+  });
+
+  // spawn barrels
+  let spawningEvent = this.time.addEvent({
+    delay: spawner.interval,
+    loop: true,
+    callback: () => {
+      // create barrel
+      const barrel = this.barrels.create(this.goal.x, this.goal.y, "barrel");
+
+      // set
+      barrel.setVelocityX(spawner.speed);
+
+      // lifespan
+      this.time.addEvent({
+        delay: spawner.lifespan,
+        repeat: 0,
+        callback: () => {
+          barrel.destroy();
+        }
+      });
+    }
   });
 };
 

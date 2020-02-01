@@ -42,28 +42,47 @@ gameScene.create = function() {
   this.physics.world.bounds.height = 700;
 
   // fire animation
-  this.anims.create({
-    key: "burning",
-    frames: this.anims.generateFrameNames("fire", {
-      frames: [0, 1]
-    }),
-    frameRate: 8,
-    repeat: -1
-  });
+  // this check is not really needed anymrore but I leave it here anyway
+  if (!this.anims.get("burning")) {
+    this.anims.create({
+      key: "burning",
+      frames: this.anims.generateFrameNames("fire", {
+        frames: [0, 1]
+      }),
+      frameRate: 8,
+      repeat: -1
+    });
+  }
+
+  // walking animation
+  if (!this.anims.get("walking")) {
+    this.anims.create({
+      key: "walking",
+      frames: this.anims.generateFrameNames("player", {
+        frames: [0, 1, 2]
+      }),
+      frameRate: 12,
+      yoyo: true,
+      repeat: -1
+    });
+  }
 
   // setup all level elements
   this.setupLevel();
 
-  // walking animation
-  this.anims.create({
-    key: "walking",
-    frames: this.anims.generateFrameNames("player", {
-      frames: [0, 1, 2]
-    }),
-    frameRate: 12,
-    yoyo: true,
-    repeat: -1
-  });
+  // camera bounds
+  this.cameras.main.setBounds(0, 0, 360, 700);
+  this.cameras.main.startFollow(this.player);
+
+  // overlap checks
+  // only can do overlap checks with physic groups
+  this.physics.add.overlap(
+    this.player,
+    [this.fires, this.goal],
+    () => this.restartGame(),
+    null,
+    null
+  );
 
   // enable cursor keys
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -121,7 +140,8 @@ gameScene.setupLevel = function() {
   this.levelData = this.cache.json.get("levelData");
 
   // create all the platforms
-  this.platforms = this.add.group();
+  // physics groups have better performance than regular groups
+  this.platforms = this.physics.add.staticGroup();
   for (const platform of this.levelData.platforms) {
     let newObj;
 
@@ -142,24 +162,19 @@ gameScene.setupLevel = function() {
     }
     newObj.setOrigin(0, 0);
 
-    // enable physics
-    this.physics.add.existing(newObj, true);
-
     // add to the group
     this.platforms.add(newObj);
   }
 
   // fire
-  this.fires = this.add.group();
+  this.fires = this.physics.add.group({
+    allowGravity: false,
+    immovable: true
+  });
   for (const platform of this.levelData.fires) {
     let newObj = this.add
       .sprite(platform.x, platform.y, "fire")
       .setOrigin(0, 0);
-
-    // enable physics
-    this.physics.add.existing(newObj);
-    newObj.body.allowGravity = false;
-    newObj.body.immovable = true;
 
     // play burning animation
     newObj.anims.play("burning");
@@ -182,8 +197,19 @@ gameScene.setupLevel = function() {
   this.physics.add.existing(this.goal);
 
   // collision detection
-  this.physics.add.collider(this.player, this.platforms);
-  this.physics.add.collider(this.goal, this.platforms);
+  this.physics.add.collider([this.player, this.goal], this.platforms);
+};
+
+// restart game (game over / won)
+gameScene.restartGame = function(sourceSprite, targetSprite) {
+  // fade out
+  this.cameras.main.fade(500);
+
+  // when fade out completes, restart scene
+  this.cameras.main.on("camerafadeoutcomplete", (camera, effect) => {
+    // restart the scene
+    this.scene.restart();
+  });
 };
 
 // our game's configuration
